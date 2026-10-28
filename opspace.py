@@ -36,7 +36,7 @@ def main() -> None:
     assert mujoco.__version__ >= "3.1.0", "Please upgrade to mujoco 3.1.0 or later."
 
     # Load the model and data.
-    model = mujoco.MjModel.from_xml_path("kuka_iiwa_14/scene.xml")
+    model = mujoco.MjModel.from_xml_path("mjctrl/kuka_iiwa_14/scene.xml")
     data = mujoco.MjData(model)
 
     model.opt.timestep = dt
@@ -99,6 +99,7 @@ def main() -> None:
 
         # Enable site frame visualization.
         viewer.opt.frame = mujoco.mjtFrame.mjFRAME_SITE
+        t_start = time.time()
         while viewer.is_running():
             step_start = time.time()
 

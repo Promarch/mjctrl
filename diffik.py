@@ -20,12 +20,15 @@ dt: float = 0.002
 # Maximum allowable joint velocity in rad/s. Set to 0 to disable.
 max_angvel = 0.0
 
+# Rotation speed of the mocap target about its local z-axis, in degrees per second.
+mocap_rot_deg_per_sec: float = 15.0
+
 
 def main() -> None:
     assert mujoco.__version__ >= "3.1.0", "Please upgrade to mujoco 3.1.0 or later."
 
     # Load the model and data.
-    model = mujoco.MjModel.from_xml_path("universal_robots_ur5e/scene.xml")
+    model = mujoco.MjModel.from_xml_path("mjctrl/universal_robots_ur5e/scene.xml")
     data = mujoco.MjData(model)
 
     # Override the simulation timestep.
@@ -77,6 +80,11 @@ def main() -> None:
     site_quat_conj = np.zeros(4)
     error_quat = np.zeros(4)
 
+    # Delta quaternion applied each timestep to spin the mocap target at
+    # mocap_rot_deg_per_sec. Built once since it only depends on dt.
+    dtheta = np.deg2rad(mocap_rot_deg_per_sec) * dt
+    mocap_rot_quat = np.array([np.cos(dtheta / 2), 0, 0, np.sin(dtheta / 2)])
+
     # Define a trajectory for the end-effector site to follow.
     def circle(t: float, r: float, h: float, k: float, f: float) -> np.ndarray:
         """Return the (x, y) coordinates of a circle with radius r centered at (h, k)
@@ -101,8 +109,9 @@ def main() -> None:
             step_start = time.time()
 
             # Set the target position of the end-effector site.
-            data.mocap_pos[mocap_id, 0:2] = circle(data.time, 0.1, 0.5, 0.0, 0.5)
-
+            # data.mocap_pos[mocap_id, 0:2] = circle(data.time, 0.1, 0.5, 0.0, 0.5)
+            mujoco.mju_mulQuat(data.mocap_quat[mocap_id], mocap_rot_quat, data.mocap_quat[mocap_id])
+            
             # Position error.
             error_pos[:] = data.mocap_pos[mocap_id] - data.site(site_id).xpos
 
